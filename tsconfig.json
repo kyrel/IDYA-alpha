@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES6",                          // Уровень JS, который будет генерироваться
+    "module": "commonjs",                      // Модульная система
+    "moduleResolution": "node",                // Как разрешать модули
+    "strict": false,                            // Включение всех строгих проверок (рекомендуется)
+    "esModuleInterop": true,                   // Включение совместимости с модулями ES
+    "skipLibCheck": true,                      // Пропуск проверки типов в библиотеках
+    "forceConsistentCasingInFileNames": true,  // Обеспечивает согласованность имен файлов
+    "outDir": "./dist",                        // Папка, куда будет компилироваться код
+    "baseUrl": "./src",                        // Базовый путь для импортов
+    "paths": {
+      "*": ["node_modules/*", "server/types/*"]  // Расширение путей для типов
+    },
+    "typeRoots": ["node_modules/@types", "server/types"],  // Папки для поиска типов
+    "resolveJsonModule": true,                 // Разрешает импорты JSON файлов
+    "allowJs": true                            // Разрешает работу с JavaScript файлами (если необходимо)
+  },
+  "include": [
+    "server/**/*",    // Включаем все файлы в папке src
+    "server/types/**/*", // Убедитесь, что типы из server/types также включены
+    "server/types/express.d.ts" // Убедитесь, что типы из server/types также включены
+  ],
+  "exclude": [
+    "node_modules", // Исключаем папку node_modules
+    "dist"          // Исключаем папку с результатами компиляции
+  ]
+}
