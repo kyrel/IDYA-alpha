@@ -5,6 +5,7 @@ import sequelize from './config/db.config';
 import orderRoutes from "./order/order.routes";
 import userRoutes from "./user/user.routes";
 import responseRoutes from "./response/response.routes";
+import briefRoutes from "./brief/brief.routes";
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ app.use(express.json());
 app.use('/api/orders', orderRoutes);
 app.use('/api/responses', responseRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/briefs', briefRoutes);
 
 sequelize.sync({ alter: true })
     .then(() => {
