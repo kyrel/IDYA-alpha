@@ -5,11 +5,18 @@ export const getAllBriefs: RequestHandler = async (req, res) => {
     try {
         const userId = req.user?.id;
         
-        let briefs = await Brief.findAll({
+        const dbBriefs = await Brief.findAll({
             where: {ownerId: userId},
-            order: [['id', 'DESC']]            
+            order: [['id', 'DESC']],
+            include: [{ model: BriefQuestion, as: 'briefQuestions' }],            
         })        
-        console.log(briefs);
+        console.log(dbBriefs);
+
+        const briefs = dbBriefs.map(brief=>{
+            const { id, title, briefQuestions } = brief;
+            const questions = briefQuestions.map(({ questionText }) => ( {questionText} ));
+            return { id, title, questions };
+        });
         res.status(200).json({ briefs });
     } catch (error) {
         console.error(error);
@@ -20,8 +27,7 @@ export const getAllBriefs: RequestHandler = async (req, res) => {
 export const getBrief: RequestHandler = async (req, res) => {
     try {
         const userId = req.user?.id;
-        const { id } = req.params;
-        const dbBrief = await Brief.findByPk(id, {
+        const dbBrief = await Brief.findByPk(req.params.id, {
             include: [{ model: BriefQuestion, as: 'briefQuestions' }],
         });
 
@@ -30,9 +36,9 @@ export const getBrief: RequestHandler = async (req, res) => {
             return;
         }
         console.log(dbBrief);
-        const { briefQuestions: dbBriefQuestions, title } = dbBrief;
-        const questions = dbBriefQuestions.map(({ questionText }) => ( {questionText} ));
-        res.status(200).json({ brief: { title, questions } });
+        const { id, title, briefQuestions } = dbBrief;
+        const questions = briefQuestions.map(({ questionText }) => ( {questionText} ));
+        res.status(200).json({ brief: { id, title, questions } });
     } catch(error) {
         console.error(error);
         res.status(500).json({ message: 'Failed to fetch brief', error });
@@ -135,5 +141,5 @@ async function createBriefQuestions({ briefId, questions }: {
 }) {
     for (const { questionText } of questions) {
         await BriefQuestion.create({ briefId, questionText });
-    }  
+    }
 }

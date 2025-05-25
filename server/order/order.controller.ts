@@ -4,6 +4,7 @@ import Response from '../response/response.model';
 import {RequestHandler} from "express";
 import path from 'path';
 import fs from 'fs';
+import { BriefSendout } from '../briefSendout/briefSendout.model';
 
 // Создание заказа
 export const createOrder: RequestHandler = async (req,res) => {
@@ -74,7 +75,8 @@ export const getOrder: RequestHandler = async (req, res) => {
             include: [
                 { model: Response, include: [{ model: User, attributes: ['nickname', 'email'] }] },
                 { model: User, as: 'customer', attributes: ['id', 'nickname', 'email'] },
-                { model: User, as: 'executant', attributes: ['id', 'nickname', 'email'] }
+                { model: User, as: 'executant', attributes: ['id', 'nickname', 'email'] },
+                { model: BriefSendout }
             ],
         });
 
@@ -83,8 +85,9 @@ export const getOrder: RequestHandler = async (req, res) => {
             return;
         }
 
-        const { Responses: orderResponses, executant, customer, ...order } = dbOrder.dataValues;
+        const { Responses: orderResponses, BriefSendouts: briefSendouts, executant, customer, ...order } = dbOrder.dataValues;
         const responseCount = orderResponses.length;
+        const briefSendout = briefSendouts[0];
 
         if (userRole === 'customer') {
             const responseData = orderResponses.map(function(r) {
@@ -102,15 +105,18 @@ export const getOrder: RequestHandler = async (req, res) => {
             }
             res.status(200).json({ order: orderData });
         } else if (userRole === 'executant') {
+            console.log(briefSendout);
             console.log(orderResponses);
             const userHasResponded = orderResponses.some(r => r.dataValues.userId == userId);
             const userIsChosenAsExecutant = executant?.dataValues?.id == userId;
+            
             const orderData = {
                 ...order,
                 responseCount,
                 userHasResponded,
                 userIsChosenAsExecutant,
-                customer: customer.dataValues
+                customer: customer.dataValues,
+                briefSendout
             }
             res.status(200).json({ order: orderData });
         }
