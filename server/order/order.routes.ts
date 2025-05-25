@@ -5,9 +5,11 @@ import {
     assignExecutantAndStartOrder, completeOrder,
     createOrder,
     deleteOrder, getAllCreatedOrders,
-    getAllOrdersForUser, getPresentation,
+    getAllOrdersForUser, getAllOrdersRespondedByUser,
+    getOrder, getPresentation,
     updateOrder, uploadPresentation
 } from "./order.controller";
+import { getResponsesForOrder } from '../response/response.controller';
 import upload from "../middleware/upload.middleware";
 
 const router = Router();
@@ -16,8 +18,12 @@ router.use(authenticate);
 
 router.get('/', getAllOrdersForUser);
 router.get('/created', getAllCreatedOrders);
+router.get('/responded', checkRole(['executant']), getAllOrdersRespondedByUser);
+router.get('/:id', getOrder);
 
-router.put('/assign-response', checkRole(['customer']), assignExecutantAndStartOrder);
+
+router.get('/:id/responses', authenticate, getResponsesForOrder);
+router.put('/:id/accept-response/:responseId', checkRole(['customer']), assignExecutantAndStartOrder);
 router.put('/finish/:id', checkRole(['customer']), completeOrder);
 router.put('/:id', checkRole(['customer']), updateOrder);
 

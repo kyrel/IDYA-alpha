@@ -16,8 +16,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/responses', responseRoutes);
 app.use('/api/users', userRoutes);
 
-
-sequelize.sync()
+sequelize.sync({ alter: true })
     .then(() => {
         console.log('Database connected');
     })

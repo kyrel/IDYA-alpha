@@ -4,11 +4,11 @@ import Order from "../order/order.model";
 import User from "../user/user.model";
 
 class Response extends Model {
-    public id!: number;
-    public orderId!: number;
-    public userId!: number;
-    public message!: string;
-    public proposedDeadline!: Date;
+    declare public id: number;
+    declare public orderId: number;
+    declare public userId: number;
+    declare public message: string;
+    declare public proposedDeadline: Date | null;
 }
 
 Response.init(
@@ -20,11 +20,11 @@ Response.init(
         },
         message: {
             type: DataTypes.TEXT,
-            allowNull: false,
+            allowNull: true,
         },
         proposedDeadline: {
             type: DataTypes.DATE,
-            allowNull: false,
+            allowNull: true,
         },
     },
     {
@@ -33,7 +33,8 @@ Response.init(
     }
 );
 
-Response.belongsTo(Order, { foreignKey: 'orderId' });
+Order.hasMany(Response, { foreignKey: { name: 'orderId', allowNull: false} });
+Response.belongsTo(Order, { foreignKey: { name: 'orderId', allowNull: false} });
 Response.belongsTo(User, { foreignKey: 'userId' });
 
 export default Response;

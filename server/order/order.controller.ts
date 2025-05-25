@@ -4,6 +4,7 @@ import Response from '../response/response.model';
 import {RequestHandler} from "express";
 import path from 'path';
 import fs from 'fs';
+
 // Создание заказа
 export const createOrder: RequestHandler = async (req,res) => {
     try {
@@ -42,13 +43,16 @@ export const getAllOrdersForUser: RequestHandler = async (req,res) => {
 
         if (userRole === 'customer') {
             orders = await Order.findAll({
+                raw: true,
                 where: { customerId: userId },
-                include: [{ model: User, as: 'executant', attributes: ['nickname'] }]
+                order: [['id', 'DESC']],
+                include: [{ model: User, as: 'executant', attributes: ['nickname', 'email'] }]
             });
         } else if (userRole === 'executant') {
             orders = await Order.findAll({
                 where: { executantId: userId },
-                include: [{ model: User, as: 'customer', attributes: ['nickname'] }]
+                order: [['id', 'DESC']],
+                include: [{ model: User, as: 'customer', attributes: ['nickname', 'email'] }]
             });
         } else {
             orders = [];
@@ -60,6 +64,61 @@ export const getAllOrdersForUser: RequestHandler = async (req,res) => {
         res.status(500).json({ message: 'Failed to fetch orders', error });
     }
 };
+
+export const getOrder: RequestHandler = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        const userRole = req.user?.role;
+        const { id } = req.params;
+        const dbOrder = await Order.findByPk(id, {
+            include: [
+                { model: Response, include: [{ model: User, attributes: ['nickname', 'email'] }] },
+                { model: User, as: 'customer', attributes: ['id', 'nickname', 'email'] },
+                { model: User, as: 'executant', attributes: ['id', 'nickname', 'email'] }
+            ],
+        });
+
+        if (!dbOrder) {
+            res.status(404).json({ message: 'Order not found' });
+            return;
+        }
+
+        const { Responses: orderResponses, executant, customer, ...order } = dbOrder.dataValues;
+        const responseCount = orderResponses.length;
+
+        if (userRole === 'customer') {
+            const responseData = orderResponses.map(function(r) {
+                const { User: executant, ...response } = r.dataValues;
+                return {
+                    ...response,
+                    executant
+                };
+            });
+            const orderData = {
+                ...order,
+                responseCount,
+                responses: responseData,
+                executant: executant?.dataValues
+            }
+            res.status(200).json({ order: orderData });
+        } else if (userRole === 'executant') {
+            console.log(orderResponses);
+            const userHasResponded = orderResponses.some(r => r.dataValues.userId == userId);
+            const userIsChosenAsExecutant = executant?.dataValues?.id == userId;
+            const orderData = {
+                ...order,
+                responseCount,
+                userHasResponded,
+                userIsChosenAsExecutant,
+                customer: customer.dataValues
+            }
+            res.status(200).json({ order: orderData });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to fetch order', error });
+    }
+}
 
 // Обновление заказа
 export const updateOrder: RequestHandler = async (req,res) => {
@@ -153,11 +212,11 @@ export const completeOrder: RequestHandler = async (req, res) => {
 // Установка исполнителя и перевод заказа в статус "в работе"
 export const assignExecutantAndStartOrder: RequestHandler = async (req, res) => {
     try {
-        const { orderId, responseId } = req.body;
+        const { id, responseId } = req.params;
 
-        const order = await Order.findByPk(orderId);
+        const order = await Order.findByPk(id);
 
-        console.log(orderId, responseId, order)
+        console.log(id, responseId, order)
 
         if (!order) {
             res.status(404).json({ message: 'Order not found' });
@@ -200,15 +259,66 @@ export const assignExecutantAndStartOrder: RequestHandler = async (req, res) => 
 
 export const getAllCreatedOrders: RequestHandler = async (req, res) => {
     try {
-        const orders = await Order.findAll({
+        const userId = req.user?.id;
+        const dbOrders = await Order.findAll({
             where: { status: 'created' },
+            order: [['id', 'DESC']],
+            include: [
+                { model: User, as: 'customer', attributes: ['nickname', 'email'] },
+                { model: Response },
+            ]
         });
+        const orders = dbOrders.map(dbOrder=>{
+            const { Responses: orderResponses, ...order } = dbOrder.dataValues;
+            const responseCount = orderResponses.length;
+            const userHasResponded = orderResponses.some(r => r.dataValues.userId == userId);
+            return {
+                ...order,
+                responseCount,
+                userHasResponded                
+            };
+        })
         res.status(200).json({ orders });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Failed to fetch orders', error });
     }
 };
+
+export const getAllOrdersRespondedByUser: RequestHandler = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        // Sequelise isn't great with WHERE EXISTS, so query responses first
+        const responses = await Response.findAll({
+            where: { userId: userId },
+            attributes: ['orderId']
+        });
+        const orderIds = responses.map(r=>r.orderId);
+
+        const dbOrders = await Order.findAll({
+            where: { id: orderIds },
+            order: [['id', 'DESC']],
+            include: [
+                { model: User, as: 'customer', attributes: ['nickname', 'email'] },
+                { model: Response },
+            ]
+        });
+        const orders = dbOrders.map(dbOrder=>{
+            const { Responses: orderResponses, ...order } = dbOrder.dataValues;
+            const responseCount = orderResponses.length;
+            return {
+                ...order,
+                responseCount
+            };
+        })
+        res.status(200).json({ orders });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to fetch orders', error });
+    }
+};
+
+
 // Загрузка презентации
 export const uploadPresentation: RequestHandler = async (req, res) => {
     try {

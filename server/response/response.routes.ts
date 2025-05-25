@@ -8,6 +8,4 @@ router.use(authenticate);
 
 router.post('/', checkRole(['executant']), createResponse);
 
-router.get('/:id', authenticate, getResponsesForOrder);
-
 export default router;

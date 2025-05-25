@@ -8,8 +8,8 @@ export const createResponse: RequestHandler = async (req, res) => {
         const userId = req.user?.id;
 
         // Проверка на наличие всех полей
-        if (!orderId || !message || !proposedDeadline) {
-            res.status(400).json({ message: 'Order ID, message and proposed deadline are required' });
+        if (!orderId) {
+            res.status(400).json({ message: 'Order ID is required' });
             return;
         }
 
@@ -27,7 +27,7 @@ export const createResponse: RequestHandler = async (req, res) => {
             orderId,
             userId,
             message,
-            proposedDeadline: new Date(proposedDeadline),
+            proposedDeadline: proposedDeadline ? new Date(proposedDeadline): undefined,
         });
 
         res.status(201).json({
