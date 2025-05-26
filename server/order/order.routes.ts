@@ -10,7 +10,7 @@ import {
     updateOrder, uploadPresentation
 } from "./order.controller";
 import { getResponsesForOrder } from '../response/response.controller';
-import { sendBriefById, sendBriefWithQuestions } from '../briefSendout/briefSendout.controller';
+import { sendBriefById, sendBriefResponse, sendBriefWithQuestions } from '../briefSendout/briefSendout.controller';
 import upload from "../middleware/upload.middleware";
 
 const router = Router();
@@ -30,6 +30,7 @@ router.put('/:id', checkRole(['customer']), updateOrder);
 
 router.post('/:id/send-brief/:briefId', checkRole(['executant']), sendBriefById);
 router.post('/:id/send-brief', checkRole(['executant']), sendBriefWithQuestions);
+router.post('/:id/send-brief-response', checkRole(['customer']), sendBriefResponse);
 
 router.delete('/:id', checkRole(['customer']), deleteOrder);
 

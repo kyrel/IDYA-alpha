@@ -66,6 +66,44 @@ export const sendBriefWithQuestions: RequestHandler = async (req, res) => {
     }
 };
 
+export const sendBriefResponse: RequestHandler = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        const { id } = req.params;
+        const { answers } = req.body;
+        const order = await Order.findByPk(id, {
+            include: [{ model: BriefSendout, include: [{ model: BriefSendoutQuestion, as: 'briefSendoutQuestions' }] }],
+        });
+        if (!order || order.customerId != userId) {
+            res.status(404).json({ message: 'Order not found' });
+            return;
+        }
+        const briefSendout = order.dataValues.BriefSendouts[0];
+        if (!briefSendout) {
+            res.status(400).json({ message: 'Brief sendout for order not found' });
+            return;
+        }
+        for(const question of briefSendout.briefSendoutQuestions) {
+            const answer = answers.find(a=>a.questionId == question.id);
+            if (!answer) { 
+                continue;
+            }
+            await BriefSendoutQuestion.update(
+                { answerText: answer.answerText },
+                { where: { id: answer.questionId } }
+            );
+        }
+        await BriefSendout.update(
+            { isReplied: true },
+            { where: { id: briefSendout.id } }
+        );
+
+    } catch(error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to send brief', error });
+    }
+}
+
 async function createBriefSendout({ orderId, questions }: {
     orderId: number,
     questions: Array<{questionText: string}>
