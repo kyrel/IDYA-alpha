@@ -4,7 +4,8 @@ import Order from "../order/order.model";
 
 export class BriefSendout extends Model {
     declare public id: number;
-    declare public orderId: number;    
+    declare public orderId: number;
+    declare public isReplied: boolean;
 }
 
 BriefSendout.init(
@@ -13,7 +14,12 @@ BriefSendout.init(
             type: DataTypes.INTEGER,
             primaryKey: true,
             autoIncrement: true,
-        }        
+        },
+        isReplied: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false
+        },
     },
     {
         sequelize,
@@ -36,6 +42,10 @@ BriefSendoutQuestion.init({
     questionText: {
         type: DataTypes.STRING,
         allowNull: false,
+    },
+    answerText: {
+        type: DataTypes.STRING,
+        allowNull: true,        
     }
 }, {
     sequelize,

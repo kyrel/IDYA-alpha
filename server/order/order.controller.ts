@@ -4,7 +4,7 @@ import Response from '../response/response.model';
 import {RequestHandler} from "express";
 import path from 'path';
 import fs from 'fs';
-import { BriefSendout } from '../briefSendout/briefSendout.model';
+import { BriefSendout, BriefSendoutQuestion } from '../briefSendout/briefSendout.model';
 
 // Создание заказа
 export const createOrder: RequestHandler = async (req,res) => {
@@ -76,7 +76,7 @@ export const getOrder: RequestHandler = async (req, res) => {
                 { model: Response, include: [{ model: User, attributes: ['nickname', 'email'] }] },
                 { model: User, as: 'customer', attributes: ['id', 'nickname', 'email'] },
                 { model: User, as: 'executant', attributes: ['id', 'nickname', 'email'] },
-                { model: BriefSendout }
+                { model: BriefSendout, include: [{ model: BriefSendoutQuestion, as: 'briefSendoutQuestions' }] }
             ],
         });
 
@@ -87,7 +87,13 @@ export const getOrder: RequestHandler = async (req, res) => {
 
         const { Responses: orderResponses, BriefSendouts: briefSendouts, executant, customer, ...order } = dbOrder.dataValues;
         const responseCount = orderResponses.length;
-        const briefSendout = briefSendouts[0];
+        const briefSendout = 
+            briefSendouts.length > 0 ?
+            {
+                isReplied: briefSendouts[0].isReplied,
+                questions: briefSendouts[0].briefSendoutQuestions.map(({ id, questionText, answerText }) => ({ id, questionText, answerText }))
+            }:
+            undefined;
 
         if (userRole === 'customer') {
             const responseData = orderResponses.map(function(r) {
@@ -101,7 +107,8 @@ export const getOrder: RequestHandler = async (req, res) => {
                 ...order,
                 responseCount,
                 responses: responseData,
-                executant: executant?.dataValues
+                executant: executant?.dataValues,
+                briefSendout
             }
             res.status(200).json({ order: orderData });
         } else if (userRole === 'executant') {
