@@ -29,7 +29,7 @@ export const sendBriefById: RequestHandler = async (req, res) => {
         
         const briefSendout = await createBriefSendout({ orderId: order.id, questions });
         
-        res.status(201).json({
+        res.status(200).json({
             message: 'Brief sent successfully',
             briefSendout: { id: briefSendout.id, questions }
         });
@@ -56,7 +56,7 @@ export const sendBriefWithQuestions: RequestHandler = async (req, res) => {
 
         const briefSendout = await createBriefSendout({ orderId: order.id, questions });
 
-        res.status(201).json({
+        res.status(200).json({
             message: 'Brief sent successfully',
             briefSendout: { id: briefSendout.id, questions }
         });
@@ -97,7 +97,9 @@ export const sendBriefResponse: RequestHandler = async (req, res) => {
             { isReplied: true },
             { where: { id: briefSendout.id } }
         );
-
+        res.status(200).json({
+            message: 'Brief response sent successfully'
+        });
     } catch(error) {
         console.error(error);
         res.status(500).json({ message: 'Failed to send brief', error });
